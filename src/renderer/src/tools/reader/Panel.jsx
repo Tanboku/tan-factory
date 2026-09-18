@@ -104,8 +104,8 @@ export default function ReaderPanel({ files }) {
       )}
 
       <div className="pe-tip">
-        🐟 摸鱼三件套：<b>M</b> 切换 透明/多行/单行 模式 · <b>F9</b> Boss 键一键隐身（进度不丢）·
-        <b> ←→</b> 翻页 <b>+−</b> 字号 <b>[]</b> 行距 <b>C</b> 透明模式配色
+        🐟 摸鱼四模式：<b>M</b> 循环 多行 → 透明 → 单行 → 透明单行 · <b>F9</b> Boss 键一键隐身（进度不丢）·
+        标题栏 <b>A＋/A－</b> 调字号 · <b>←→</b> 翻页 <b>[]</b> 行距 <b>C</b> 透明配色
       </div>
     </div>
   );

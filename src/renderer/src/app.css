@@ -2271,7 +2271,8 @@ input:disabled {
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(50, 35, 20, 0.28);
 }
-.reader.mode-ghost {
+.reader.mode-ghost,
+.reader.mode-ghost-line {
   background: transparent;
 }
 
@@ -2288,6 +2289,11 @@ input:disabled {
 .mode-ghost .reader-bar {
   background: rgba(0, 0, 0, 0.18);
   border-radius: 12px 12px 0 0;
+}
+.mode-ghost-line .reader-bar {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 10px;
+  margin: 2px 2px 0;
 }
 .mode-multi .reader-bar,
 .mode-line .reader-bar {
@@ -2324,15 +2330,27 @@ input:disabled {
 }
 .reader-x {
   -webkit-app-region: no-drag;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
   border-radius: 6px;
   font-size: 9px;
   color: #b3a89d;
+  padding: 0 5px;
+  line-height: 1;
 }
 .reader-x:hover {
   background: rgba(0, 0, 0, 0.12);
   color: #e2574a;
+}
+.reader-btns {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.mode-ghost .reader-x:hover,
+.mode-ghost-line .reader-x:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffb3ab;
 }
 
 .reader-text {
@@ -2348,24 +2366,25 @@ input:disabled {
   width: 0;
   height: 0;
 }
-.mode-line .reader-text {
-  padding: 0 14px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: clip;
-  display: flex;
-  align-items: center;
+.mode-line .reader-text,
+.mode-ghost-line .reader-text {
+  padding: 2px 14px;
+  overflow-y: auto; /* 单行 = 一行高的滚动容器，方向键/滚轮逐行翻页 */
+  white-space: normal;
+  scrollbar-width: none;
 }
 .reader.mode-multi .reader-text,
 .reader.mode-line .reader-text {
   color: #2e2a27;
 }
-/* 透明模式两种配色：黑字白晕 / 白字黑晕 */
-.reader.mode-ghost.gd .reader-text {
+/* 透明模式两种配色：黑字白晕 / 白字黑晕（含透明单行） */
+.reader.mode-ghost.gd .reader-text,
+.reader.mode-ghost-line.gd .reader-text {
   color: #1c1a18;
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.95), 0 1px 3px rgba(255, 255, 255, 0.9), 0 0 12px rgba(255, 255, 255, 0.7);
 }
-.reader.mode-ghost.gl .reader-text {
+.reader.mode-ghost.gl .reader-text,
+.reader.mode-ghost-line.gl .reader-text {
   color: #f5f2ee;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 12px rgba(0, 0, 0, 0.6);
 }

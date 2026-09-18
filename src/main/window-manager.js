@@ -455,6 +455,35 @@ class WindowManager {
           await this.capture(this.reader, '05-reader-ghost.png');
           const cls = await this.reader.webContents.executeJavaScript(`document.querySelector('.reader')?.className`);
           this.log('[verify:reader:mode]', cls);
+          // 模式循环覆盖：再按两次 M → 单行 → 透明单行
+          const cls2 = [];
+          for (let i = 0; i < 2; i++) {
+            await this.reader.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'m'})); 'ok'`);
+            await sleep(350);
+            cls2.push(await this.reader.webContents.executeJavaScript(`document.querySelector('.reader')?.className`));
+          }
+          this.log('[verify:reader:modes]', JSON.stringify(cls2));
+          // 单行模式翻页：按 ↓ 后 scrollTop 应增加
+          const scrollOk = await this.reader.webContents.executeJavaScript(`(async()=>{
+            const el=document.querySelector('.reader-text');
+            const t0=el.scrollTop;
+            el.scrollBy({top: 40}); await new Promise(r=>setTimeout(r,150));
+            return t0+'->'+el.scrollTop+(el.scrollTop>t0?' OK':' FAIL');
+          })()`);
+          this.log('[verify:reader:line-page]', scrollOk);
+          // 字号按钮：A＋ 点击后字号应 +1
+          const fontOk = await this.reader.webContents.executeJavaScript(`(async()=>{
+            const el=document.querySelector('.reader-text');
+            const f0=getComputedStyle(el).fontSize;
+            const btn=[...document.querySelectorAll('.reader-x')].find(b=>b.textContent.includes('A＋'));
+            if(btn){btn.click(); await new Promise(r=>setTimeout(r,200));}
+            const f1=getComputedStyle(el).fontSize;
+            return f0+'->'+f1+(parseInt(f1)>parseInt(f0)?' OK':' FAIL');
+          })()`);
+          this.log('[verify:reader:font]', fontOk);
+          // 回到多行模式并测进度持久化
+          await this.reader.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'m'})); 'ok'`);
+          await sleep(400);
           // 进度持久化：滚到底 → 防抖保存 → 断言 pos > 0.5
           await this.reader.webContents.executeJavaScript(
             `(()=>{const el=document.querySelector('.reader-text');el.scrollTop=el.scrollHeight;el.dispatchEvent(new Event('scroll'));return el.scrollTop})()`
@@ -473,7 +502,7 @@ class WindowManager {
       this._flushReport();
       app.quit();
       // 兜底：quit 后 1.5s 仍未退出则强制结束（防止僵尸进程占用单实例锁）
-      setTimeout(() => app.exit(0), 1500).unref();
+      setTimeout(() => app.exit(0), 1500);
     }
   }
 

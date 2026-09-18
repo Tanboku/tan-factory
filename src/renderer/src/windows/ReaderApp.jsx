@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const MODES = ['multi', 'ghost', 'line']; // 多行 / 透明纯文本 / 单行
-const MODE_H = { multi: 340, ghost: 340, line: 46 };
-const MODE_W = { multi: 480, ghost: 480, line: 640 };
+const MODES = ['multi', 'ghost', 'line', 'ghost-line']; // 多行 / 透明 / 单行 / 透明单行
+const MODE_W = { multi: 480, ghost: 480, line: 640, 'ghost-line': 640 };
+// 单行类模式的窗高 = 标题栏 + 一行文字
+const winH = (mode, font, lineH) =>
+  mode === 'line' || mode === 'ghost-line' ? 30 + Math.round(font * lineH) : 340;
 
 export default function ReaderApp() {
   const [book, setBook] = useState(null); // {id, name, text, pos}
@@ -41,7 +43,7 @@ export default function ReaderApp() {
     window.api.store.set('readerMode', mode);
     window.api.store.set('readerFont', font);
     window.api.store.set('readerLineH', lineH);
-    window.api.reader.resize(MODE_W[mode], MODE_H[mode]);
+    window.api.reader.resize(MODE_W[mode], winH(mode, font, lineH));
   }, [mode, font, lineH]);
 
   // 内容就绪后恢复进度
@@ -70,7 +72,8 @@ export default function ReaderApp() {
   const page = (dir) => {
     const el = textRef.current;
     if (!el) return;
-    el.scrollBy({ top: dir * (mode === 'line' ? font * lineH : el.clientHeight * 0.9), behavior: 'smooth' });
+    const line = mode === 'line' || mode === 'ghost-line';
+    el.scrollBy({ top: dir * (line ? Math.round(font * lineH) : el.clientHeight * 0.9), behavior: 'smooth' });
   };
 
   const cycleMode = () => setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length]);
@@ -129,12 +132,34 @@ export default function ReaderApp() {
   }, [mode, font, lineH, book]);
 
   const cls = `reader mode-${mode} ${ghostLight ? 'gl' : 'gd'}`;
+  const ghostish = mode === 'ghost' || mode === 'ghost-line';
+  const modeName = { multi: '多行', ghost: '透明', line: '单行', 'ghost-line': '透明单行' }[mode];
 
   return (
     <div className={cls}>
       <div className="reader-bar" onDoubleClick={cycleMode}>
-        <span className="reader-title">{book ? book.name : '兔子阅读器'}</span>
-        <span className="reader-tip">M 模式 · F9 隐身</span>
+        <span className="reader-title" title={`${book ? book.name : ''} · ${modeName}模式`}>
+          {book ? book.name : '兔子阅读器'}
+        </span>
+        <span className="reader-btns">
+          <button className="reader-x" onClick={() => setFont((f) => Math.max(11, f - 1))} title="减小字号 (-)">
+            A－
+          </button>
+          <button className="reader-x" onClick={() => setFont((f) => Math.min(28, f + 1))} title="增大字号 (+)">
+            A＋
+          </button>
+          <button className="reader-x" onClick={cycleMode} title="切换模式 (M)：多行/透明/单行/透明单行">
+            {modeName}
+          </button>
+          {ghostish && (
+            <button className="reader-x" onClick={() => setGhostLight((v) => !v)} title="透明模式配色 (C)">
+              {ghostLight ? '◐白' : '◑黑'}
+            </button>
+          )}
+        </span>
+        <span className="reader-tip" title="←→/空格 翻页 · +− 字号 · [] 行距 · M 模式 · F9 一键隐身">
+          F9 隐身
+        </span>
         <span className="reader-pct">{(pct * 100).toFixed(1)}%</span>
         <button className="reader-x" onClick={() => window.api.reader.hide()} title="隐藏 (Esc/F9 恢复)">
           ✕
