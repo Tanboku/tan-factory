@@ -5,6 +5,10 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+# 发布 Release 需要对仓库内容的写权限
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
