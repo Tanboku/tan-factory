@@ -2,6 +2,8 @@ node_modules/
 dist-renderer/
 release/
 release2/
+release3/
+release*/
 .verify/
 .firecrawl/
 *.log

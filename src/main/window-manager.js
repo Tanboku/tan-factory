@@ -1,6 +1,6 @@
 'use strict';
 
-const { BrowserWindow, screen, Menu, app } = require('electron');
+const { BrowserWindow, screen, Menu, app, Tray, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { storeGet, storeSet } = require('./services/store');
@@ -19,6 +19,7 @@ class WindowManager {
   constructor() {
     this.ball = null;
     this.panel = null;
+    this.tray = null;
     this._dragOrigin = null; // { winX, winY, cursorX, cursorY }
     this._panelPayload = null;
     this._panelBusy = false; // 打开系统对话框时不因失焦隐藏面板
@@ -42,6 +43,42 @@ class WindowManager {
   createAll() {
     this.createBall();
     this.createPanel();
+    this.createTray();
+  }
+
+  /** 系统托盘（右下角隐藏图标区）：隐藏兔子后的入口 */
+  createTray() {
+    const iconPath = path.join(ROOT, 'build', 'icon.png');
+    let image = nativeImage.createFromPath(iconPath);
+    if (image.isEmpty()) image = nativeImage.createEmpty();
+    image = image.resize({ width: 16, height: 16 });
+    this.tray = new Tray(image);
+    this._updateTray();
+    this.tray.on('click', () => this.togglePanel());
+    this.tray.on('right-click', () => this.tray?.popUpContextMenu());
+  }
+
+  _updateTray() {
+    if (!this.tray) return;
+    const ballHidden = this.ball && !this.ball.isVisible();
+    this.tray.setToolTip(
+      `兔子工厂 · ${ballHidden ? '兔子已隐藏' : '兔子在桌面上'} · Alt+Space 唤起面板`
+    );
+    this.tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: ballHidden ? '🐰 显示兔子' : '🐰 隐藏兔子（保留托盘）', click: () => this.toggleBall() },
+        { label: '🧰 打开工具面板', click: () => this.showPanel() },
+        { type: 'separator' },
+        { label: '退出兔子工厂', click: () => app.quit() },
+      ])
+    );
+  }
+
+  toggleBall() {
+    if (!this.ball) return;
+    if (this.ball.isVisible()) this.ball.hide();
+    else this.ball.show();
+    this._updateTray();
   }
 
   _preload() {
@@ -106,11 +143,13 @@ class WindowManager {
         sandbox: false,
       },
     });
-    this.panel.setAlwaysOnTop(true, 'floating');
+    // z 序高于悬浮球（同为 screen-saver 层，优先级 +1），避免球遮挡面板内容抢点击
+    this.panel.setAlwaysOnTop(true, 'screen-saver', 1);
     this.panel.loadFile(INDEX, { search: '?win=panel' });
     this.panel.on('blur', () => {
-      // 弹出系统文件对话框时暂时抑制
-      if (!this._panelBusy && !process.env.VERIFY) this.hidePanel();
+      // 弹系统对话框期间、面板被固定（📌）时不自动隐藏
+      const pinned = storeGet('panelPinned', false);
+      if (!this._panelBusy && !pinned && !process.env.VERIFY) this.hidePanel();
     });
     this.panel.on('closed', () => (this.panel = null));
     return this.panel;
@@ -187,6 +226,7 @@ class WindowManager {
       { label: '🐰 打开工具面板', click: () => this.showPanel() },
       { label: '⌨️ 快捷键：Alt + Space', enabled: false },
       { type: 'separator' },
+      { label: '🙈 隐藏兔子（托盘常驻）', click: () => this.toggleBall() },
       { label: '退出兔子工厂', click: () => app.quit() },
     ]);
     menu.popup({ window: this.ball });
@@ -247,6 +287,29 @@ class WindowManager {
         this.log('[verify:dom:panel]', JSON.stringify(await this._assert(this.panel, assertions.panelHome)));
       }
 
+      // 真实点击测试：模拟系统级鼠标事件点工具卡片（复现"点卡片没反应"类反馈）
+      if (process.env.VERIFY_CLICK) {
+        const label = process.env.VERIFY_CLICK;
+        const pos = await this.panel.webContents.executeJavaScript(`(()=>{
+          const c=[...document.querySelectorAll('.tool-card')].find(c=>c.textContent.includes(${JSON.stringify(label)}));
+          if(!c) return null; c.scrollIntoView({block:'center'});
+          const r=c.getBoundingClientRect();
+          return [Math.round(r.x+r.width/2), Math.round(r.y+r.height/2)];
+        })()`);
+        if (pos) {
+          this.panel.webContents.sendInputEvent({ type: 'mouseMove', x: pos[0], y: pos[1] });
+          this.panel.webContents.sendInputEvent({ type: 'mouseDown', x: pos[0], y: pos[1], button: 'left', clickCount: 1 });
+          this.panel.webContents.sendInputEvent({ type: 'mouseUp', x: pos[0], y: pos[1], button: 'left', clickCount: 1 });
+          await sleep(900);
+          const opened = await this.panel.webContents.executeJavaScript(
+            `document.querySelector('.tool-view .tool-title')?.textContent || 'NOT_OPENED'`
+          );
+          this.log('[verify:click:' + label + ']', JSON.stringify({ pos, opened }));
+        } else {
+          this.log('[verify:click:' + label + ']', 'CARD_NOT_FOUND');
+        }
+      }
+
       // 投喂场景：面板开着时投喂图片 → 应实时切换到匹配选择视图
       if (process.env.VERIFY_PICK) {
         await this.panel.webContents.executeJavaScript(
@@ -287,7 +350,7 @@ class WindowManager {
             );
             await sleep(+process.env.VERIFY_WAIT || 1800);
             const state = await this.panel.webContents.executeJavaScript(
-              `(() => [...document.querySelectorAll('.ic-item .ic-info, .wm-out, .gif-out, .mt-out, .zp-progress, .ocr-text, .b64-err')].map(e => e.value !== undefined && e.tagName === 'TEXTAREA' ? e.value : e.textContent.trim()).concat(window.__fetchTest ? ['PROBE:'+window.__fetchTest] : []).concat(window.__ocrDone ? ['OCR:'+window.__ocrDone] : []).concat(window.__ocrLog ? ['LOG:'+window.__ocrLog.join(' / ')] : []))()`
+              `(() => [...document.querySelectorAll('.ic-item .ic-info, .wm-out, .gif-out, .mt-out, .zp-progress, .ocr-text, .b64-err, .mc-result')].map(e => e.value !== undefined && e.tagName === 'TEXTAREA' ? e.value : e.textContent.trim()).concat(window.__fetchTest ? ['PROBE:'+window.__fetchTest] : []).concat(window.__ocrDone ? ['OCR:'+window.__ocrDone] : []).concat(window.__ocrLog ? ['LOG:'+window.__ocrLog.join(' / ')] : []))()`
             );
             this.log('[verify:func:clicked]', clicked, JSON.stringify(state));
           }
@@ -298,6 +361,8 @@ class WindowManager {
     } finally {
       this._flushReport();
       app.quit();
+      // 兜底：quit 后 1.5s 仍未退出则强制结束（防止僵尸进程占用单实例锁）
+      setTimeout(() => app.exit(0), 1500).unref();
     }
   }
 

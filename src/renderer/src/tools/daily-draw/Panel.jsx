@@ -55,24 +55,43 @@ export default function DailyDrawPanel() {
 
   useEffect(() => {
     window.api.store.get('dailyDraw', null).then((v) => {
-      if (v && v.date === today()) {
+      // 兼容旧格式（fortune 为数组的 v1 数据）与损坏数据
+      const ok =
+        v && v.date === today() && v.fortune?.luck && Array.isArray(v.fortune.yi) && v.card?.rarity && v.card.name;
+      if (ok) {
         setState(v);
         setFlipped({ fortune: true, card: true });
+      } else if (v) {
+        window.api.store.set('dailyDraw', null);
       }
     });
     const t = setInterval(() => setNow(today()), 30000);
     return () => clearInterval(t);
   }, []);
 
+  // 每张牌用独立日期种子：先点哪张、点几张，结果都一致
   const roll = (mode) => {
-    const rnd = mulberry32(hashStr(now + ':' + mode));
-    const fortune = pickWeighted(rnd, FORTUNES, 2);
-    let acc = 0;
-    const rp = rnd();
-    const rarity = RARITIES.find(([n, p]) => (acc += p) >= rp) || RARITIES[3];
-    const card = CARDS[Math.floor(rnd() * CARDS.length)];
-    const yi = [0, 1, 2].map(() => YI[Math.floor(rnd() * YI.length)]);
-    const next = { date: now, fortune, rarity, card, yi };
+    const fr =
+      state?.date === now
+        ? state.fortune
+        : (() => {
+            const rnd = mulberry32(hashStr(now + ':fortune'));
+            return {
+              luck: pickWeighted(rnd, FORTUNES, 2),
+              yi: [0, 1, 2].map(() => YI[Math.floor(rnd() * YI.length)]),
+            };
+          })();
+    const cd =
+      state?.date === now
+        ? state.card
+        : (() => {
+            const rnd = mulberry32(hashStr(now + ':card'));
+            let acc = 0;
+            const rp = rnd();
+            const rarity = RARITIES.find(([n, p]) => (acc += p) >= rp) || RARITIES[3];
+            return { rarity, name: CARDS[Math.floor(rnd() * CARDS.length)] };
+          })();
+    const next = { date: now, fortune: fr, card: cd };
     setState(next);
     setFlipped((f) => ({ ...f, [mode]: true }));
     window.api.store.set('dailyDraw', next);
@@ -106,13 +125,13 @@ export default function DailyDrawPanel() {
           done={flipped.fortune}
           onBackClick={() => roll('fortune')}
           front={
-            state ? (
+            state?.fortune ? (
               <div className="dd-content">
                 <span className="dd-luck" style={{ color: '#f2664f' }}>
-                  {state.fortune[0]}
+                  {state.fortune.luck[0]}
                 </span>
-                <span className="dd-sub">{state.fortune[1]}</span>
-                <span className="dd-yi">今日宜：{state.yi.filter((v, i, a) => a.indexOf(v) === i).join('、')}</span>
+                <span className="dd-sub">{state.fortune.luck[1]}</span>
+                <span className="dd-yi">今日宜：{state.fortune.yi.filter((v, i, a) => a.indexOf(v) === i).join('、')}</span>
               </div>
             ) : null
           }
@@ -122,13 +141,13 @@ export default function DailyDrawPanel() {
           done={flipped.card}
           onBackClick={() => roll('card')}
           front={
-            state ? (
+            state?.card ? (
               <div className="dd-content">
-                <span className="dd-rarity" style={{ color: state.rarity[2], textShadow: `0 0 12px ${state.rarity[2]}55` }}>
-                  {state.rarity[0]}
+                <span className="dd-rarity" style={{ color: state.card.rarity[2], textShadow: `0 0 12px ${state.card.rarity[2]}55` }}>
+                  {state.card.rarity[0]}
                 </span>
-                <span className="dd-cardname">{state.card}</span>
-                <span className="dd-sub">{state.rarity[3]}</span>
+                <span className="dd-cardname">{state.card.name}</span>
+                <span className="dd-sub">{state.card.rarity[3]}</span>
               </div>
             ) : null
           }

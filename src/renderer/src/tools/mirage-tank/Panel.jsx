@@ -312,7 +312,10 @@ export default function MirageTankPanel({ files }) {
           {out.startsWith('失败') ? out : '✓ 已输出 ' + nameOf(out) + '（点击定位）'}
         </div>
       )}
-      <div className="ic-note">坦克图需以 PNG 保存才有透明通道；聊天软件深色/浅色模式下效果不同</div>
+      <div className="ic-note warn">
+        ⚠️ 发送到 QQ/微信必须勾选「原图」或以文件形式发送——普通发送会被压缩去掉透明通道，坦克即失效
+      </div>
+      <div className="ic-note">坦克图需 PNG 才有透明通道 · 聊天深色/浅色模式下效果不同</div>
     </div>
   );
 }

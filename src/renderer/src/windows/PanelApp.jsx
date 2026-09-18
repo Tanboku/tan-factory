@@ -141,6 +141,17 @@ export default function PanelApp() {
   const [view, setView] = useState({ type: 'home' }); // home | pick | tool
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [pinned, setPinned] = useState(false);
+
+  // 📌 固定面板：固定后失焦不自动隐藏（如去资源管理器选文件再拖回来）
+  useEffect(() => {
+    window.api.store.get('panelPinned', false).then(setPinned);
+  }, []);
+  const togglePin = () => {
+    const v = !pinned;
+    setPinned(v);
+    window.api.store.set('panelPinned', v);
+  };
 
   // 打开时拉取主进程带来的 payload（悬浮球拖放文件等）；已打开时经事件实时接收
   useEffect(() => {
@@ -193,6 +204,13 @@ export default function PanelApp() {
         <span className="logo">🐰</span>
         <span className="brand">兔子工厂</span>
         <span className="head-actions">
+          <button
+            className={`icon-btn pin ${pinned ? 'on' : ''}`}
+            title={pinned ? '已固定：失焦不会自动收起' : '固定面板：失焦不自动收起（去选文件时有用）'}
+            onClick={togglePin}
+          >
+            📌
+          </button>
           <button className="icon-btn" title="关闭 (Esc)" onClick={() => window.api.panel.hide()}>
             ✕
           </button>

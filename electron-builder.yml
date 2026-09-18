@@ -6,6 +6,7 @@ files:
   - dist-renderer/**
   - src/main/**
   - src/preload/**
+  - build/**
   - package.json
 asarUnpack:
   - node_modules/ffmpeg-static/**

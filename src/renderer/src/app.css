@@ -267,6 +267,10 @@ button {
   background: var(--line);
   color: var(--ink);
 }
+.icon-btn.pin.on {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
 
 .panel-body {
   flex: 1;
@@ -2210,4 +2214,40 @@ input:disabled {
 .ocr-text:focus {
   border-color: var(--accent);
   background: #fff;
+}
+
+/* ============ 内存清理 ============ */
+.mc-pct {
+  font-size: 36px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.mc-result {
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.8;
+  background: #f4fcf6;
+  border: 1px solid #bfe8cd;
+  border-radius: 12px;
+  padding: 12px;
+  animation: slideIn 0.25s ease;
+}
+.mc-result b {
+  font-size: 18px;
+  color: #2e9e5b;
+}
+.mc-sub {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.ic-note.warn {
+  color: #b26a00;
+  background: #fff8ef;
+  border: 1px solid #ffd9a8;
+  border-radius: 10px;
+  padding: 8px;
+  line-height: 1.6;
+}
+.ic-note.warn b {
+  color: #e8930c;
 }
