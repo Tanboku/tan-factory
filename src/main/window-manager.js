@@ -356,6 +356,25 @@ class WindowManager {
           }
         }
       }
+
+      // 投喂累积测试：工具已开时再投喂文件 → 断言留在工具内且文件数递增（多图工具场景）
+      if (process.env.VERIFY_FEED && tool) {
+        const extra = process.env.VERIFY_FEED.split('|');
+        const before = await this.panel.webContents.executeJavaScript(
+          `document.querySelectorAll('.tool-body .ic-item, .tool-body .mt-slot img').length`
+        );
+        await this.panel.webContents.executeJavaScript(
+          `window.api.ball.dropFiles(${JSON.stringify(extra)})`
+        );
+        await sleep(1100);
+        const after = await this.panel.webContents.executeJavaScript(
+          `document.querySelectorAll('.tool-body .ic-item, .tool-body .mt-slot img').length`
+        );
+        const viewNow = await this.panel.webContents.executeJavaScript(
+          `document.querySelector('.tool-title')?.textContent || 'LEFT_TOOL_VIEW'`
+        );
+        this.log('[verify:feed]', JSON.stringify({ before, after, stillInTool: viewNow }));
+      }
     } catch (e) {
       this.log('[verify:error]', e && e.stack ? e.stack : String(e));
     } finally {

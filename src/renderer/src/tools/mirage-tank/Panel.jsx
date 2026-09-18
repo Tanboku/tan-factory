@@ -143,7 +143,7 @@ export default function MirageTankPanel({ files }) {
     try {
       const el = await loadImage(p);
       const s = slotsRef.current;
-      if (tab === 'dec' || (s.inner && s.surface)) {
+      if (tab === 'dec') {
         setDecImg({ path: p, el });
       } else if (!s.inner) {
         s.inner = { path: p, el };
@@ -152,6 +152,7 @@ export default function MirageTankPanel({ files }) {
         s.surface = { path: p, el };
         setSurface(s.surface);
       }
+      // 两个槽位已满时忽略多余图片（不再误入解码槽）
       setOut('');
     } catch {
       /* ignore */

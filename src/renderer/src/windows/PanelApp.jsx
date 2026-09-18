@@ -1,6 +1,11 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { TOOLS, searchTools, matchToolsForFiles, getTool, categoryOf, CATEGORIES } from '../core/registry';
 
+const extOf = (p) => {
+  const i = p.lastIndexOf('.');
+  return i >= 0 ? p.slice(i).toLowerCase() : '';
+};
+
 /* ---------------- 小组件 ---------------- */
 
 function ToolCard({ tool, onClick }) {
@@ -153,12 +158,30 @@ export default function PanelApp() {
     window.api.store.set('panelPinned', v);
   };
 
-  // 打开时拉取主进程带来的 payload（悬浮球拖放文件等）；已打开时经事件实时接收
+  // 打开时拉取主进程带来的 payload（悬浮球拖放文件等）；已打开时经事件实时接收。
+  // 投喂累积策略：当前工具能接住 → 直接追加进工具；匹配视图 → 合并去重；其余 → 新建匹配视图
   useEffect(() => {
     const onPayload = (p) => {
-      if (p && Array.isArray(p.files) && p.files.length) {
-        setView({ type: 'pick', files: p.files, matched: matchToolsForFiles(p.files) });
-      }
+      if (!p || !Array.isArray(p.files) || !p.files.length) return;
+      const incoming = p.files;
+
+      setView((v) => {
+        if (v.type === 'tool') {
+          const tool = getTool(v.id);
+          const accepts = tool?.accepts?.files?.map((s) => s.toLowerCase());
+          if (accepts && incoming.every((f) => accepts.includes(extOf(f)))) {
+            const fed = [...(v.fedFiles || []), ...incoming];
+            const fresh = incoming.filter((f) => !(v.fedFiles || []).includes(f));
+            // 只把「新增文件」作为 files 传给工具（工具端按追加处理），fedFiles 记录累计已投喂
+            return fresh.length ? { ...v, files: fresh, fedFiles: fed } : { ...v, fedFiles: fed };
+          }
+        }
+        if (v.type === 'pick') {
+          const merged = [...v.files.filter((f) => !incoming.includes(f)), ...incoming];
+          return { ...v, files: merged, matched: matchToolsForFiles(merged) };
+        }
+        return { type: 'pick', files: incoming, matched: matchToolsForFiles(incoming) };
+      });
     };
     window.api.panel.onPayload(onPayload);
     (async () => {
@@ -169,7 +192,7 @@ export default function PanelApp() {
 
   // 视觉验证钩子（支持携带文件，如投喂场景）
   useEffect(() => {
-    window.__openTool = (id, files) => setView({ type: 'tool', id, files });
+    window.__openTool = (id, files) => setView({ type: 'tool', id, files, fedFiles: files || [] });
   }, []);
 
   // Esc 关闭；返回键
@@ -196,7 +219,13 @@ export default function PanelApp() {
     }
   };
 
-  const openTool = (id) => setView({ type: 'tool', id, files: view.type === 'pick' ? view.files : undefined });
+  const openTool = (id) =>
+    setView({
+      type: 'tool',
+      id,
+      files: view.type === 'pick' ? view.files : undefined,
+      fedFiles: view.type === 'pick' ? view.files : [],
+    });
 
   return (
     <div className="panel" onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
