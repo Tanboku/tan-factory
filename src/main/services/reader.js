@@ -175,10 +175,35 @@ function docxToText(buf) {
   return paras.join('\n');
 }
 
+const DEFAULT_SETTINGS = { mode: 'multi', font: 15, lineH: 1.8, color: '', ghostLight: false, bar: 'auto' };
+
 // ---------- 服务入口 ----------
 module.exports = {
   id: 'reader',
   run(action, payload, ctx) {
+    const { storeGet, storeSet } = require('./store');
+
+    if (action === 'settings') {
+      const cur = { ...DEFAULT_SETTINGS, ...(storeGet('readerSettings', {}) || {}) };
+      const next = { ...cur, ...(payload || {}) };
+      // 白名单校验
+      if (!['multi', 'ghost', 'line', 'ghost-line'].includes(next.mode)) next.mode = 'multi';
+      next.font = Math.max(11, Math.min(28, +next.font || 15));
+      next.lineH = Math.max(1.2, Math.min(3, +next.lineH || 1.8));
+      next.ghostLight = !!next.ghostLight;
+      next.color = /^#[0-9a-fA-F]{6}$/.test(next.color || '') ? next.color : '';
+      if (!['auto', 'show', 'hide'].includes(next.bar)) next.bar = 'auto';
+      storeSet('readerSettings', next);
+      // 兼容旧键（阅读窗挂载读取）
+      storeSet('readerMode', next.mode);
+      ctx.wm.sendReaderSettings(next);
+      return next;
+    }
+
+    if (action === 'getSettings') {
+      return { ...DEFAULT_SETTINGS, ...(storeGet('readerSettings', {}) || {}) };
+    }
+
     if (action === 'import') {
       const buf = fs.readFileSync(payload.path);
       const ext = path.extname(payload.path).toLowerCase();

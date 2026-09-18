@@ -98,7 +98,21 @@ class WindowManager {
 
   resizeReader(w, h) {
     if (!this.reader) return;
-    this.reader.setSize(Math.max(240, Math.min(1000, Math.round(w))), Math.max(40, Math.min(900, Math.round(h))), false);
+    // 透明无边框窗上 setSize 高度偶发不生效，用 setBounds 显式指定位置尺寸
+    const [x, y] = this.reader.getPosition();
+    this.reader.setBounds({
+      x,
+      y,
+      width: Math.max(240, Math.min(1000, Math.round(w))),
+      height: Math.max(40, Math.min(900, Math.round(h))),
+    });
+  }
+
+  /** 显示设置实时推送到阅读窗 */
+  sendReaderSettings(s) {
+    if (this.reader && !this.reader.webContents.isLoading()) {
+      this.reader.webContents.send('reader:settings', s);
+    }
   }
 
   consumeReaderBook() {
@@ -455,14 +469,20 @@ class WindowManager {
           await this.capture(this.reader, '05-reader-ghost.png');
           const cls = await this.reader.webContents.executeJavaScript(`document.querySelector('.reader')?.className`);
           this.log('[verify:reader:mode]', cls);
-          // 模式循环覆盖：再按两次 M → 单行 → 透明单行
+          // 模式循环覆盖：逐模式记录 窗口尺寸 + 背景 + 文字容器高度
           const cls2 = [];
           for (let i = 0; i < 2; i++) {
             await this.reader.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'m'})); 'ok'`);
-            await sleep(350);
-            cls2.push(await this.reader.webContents.executeJavaScript(`document.querySelector('.reader')?.className`));
+            await sleep(450);
+            const info = await this.reader.webContents.executeJavaScript(`(()=>{
+              const r=document.querySelector('.reader');
+              const t=document.querySelector('.reader-text');
+              return r.className+'|bg='+getComputedStyle(r).backgroundColor+'|textH='+Math.round(t.getBoundingClientRect().height)+'|scrollH='+t.scrollHeight+'|winH='+window.innerHeight;
+            })()`);
+            const bounds = this.reader.getBounds();
+            cls2.push(info + `|win=${bounds.width}x${bounds.height}`);
           }
-          this.log('[verify:reader:modes]', JSON.stringify(cls2));
+          this.log('[verify:reader:modes]', JSON.stringify(cls2, null, 0));
           // 单行模式翻页：按 ↓ 后 scrollTop 应增加
           const scrollOk = await this.reader.webContents.executeJavaScript(`(async()=>{
             const el=document.querySelector('.reader-text');
@@ -471,16 +491,20 @@ class WindowManager {
             return t0+'->'+el.scrollTop+(el.scrollTop>t0?' OK':' FAIL');
           })()`);
           this.log('[verify:reader:line-page]', scrollOk);
-          // 字号按钮：A＋ 点击后字号应 +1
-          const fontOk = await this.reader.webContents.executeJavaScript(`(async()=>{
-            const el=document.querySelector('.reader-text');
-            const f0=getComputedStyle(el).fontSize;
-            const btn=[...document.querySelectorAll('.reader-x')].find(b=>b.textContent.includes('A＋'));
-            if(btn){btn.click(); await new Promise(r=>setTimeout(r,200));}
-            const f1=getComputedStyle(el).fontSize;
-            return f0+'->'+f1+(parseInt(f1)>parseInt(f0)?' OK':' FAIL');
-          })()`);
-          this.log('[verify:reader:font]', fontOk);
+          // 设置实时推送：面板改字号/颜色 → 阅读窗应立即生效
+          const fontOk = await (async () => {
+            const before = await this.reader.webContents.executeJavaScript(
+              `getComputedStyle(document.querySelector('.reader-text')).fontSize + '/' + getComputedStyle(document.querySelector('.reader-text')).color`
+            );
+            const services3 = require('./services');
+            await services3.run('reader', 'settings', { font: 20, color: '#3366cc' }, { wm: this });
+            await sleep(500);
+            const after = await this.reader.webContents.executeJavaScript(
+              `getComputedStyle(document.querySelector('.reader-text')).fontSize + '/' + getComputedStyle(document.querySelector('.reader-text')).color`
+            );
+            return before + ' → ' + after + (after.startsWith('20px') && after.includes('51, 102, 204') ? ' OK' : ' FAIL');
+          })();
+          this.log('[verify:reader:settings]', fontOk);
           // 回到多行模式并测进度持久化
           await this.reader.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'m'})); 'ok'`);
           await sleep(400);

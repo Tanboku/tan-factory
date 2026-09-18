@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('api', {
     hide: () => ipcRenderer.send('reader:hide'),
     getBook: () => ipcRenderer.invoke('reader:getBook'),
     onBook: (cb) => ipcRenderer.on('reader:book', (_e, id) => cb(id)),
+    onSettings: (cb) => ipcRenderer.on('reader:settings', (_e, s) => cb(s)),
     resize: (w, h) => ipcRenderer.send('reader:resize', w, h),
   },
 
@@ -51,5 +52,6 @@ contextBridge.exposeInMainWorld('api', {
 
   app: {
     quit: () => ipcRenderer.invoke('app:quit'),
+    version: () => ipcRenderer.invoke('app:version'),
   },
 });

@@ -147,11 +147,41 @@ export default function PanelApp() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [pinned, setPinned] = useState(false);
+  const [ver, setVer] = useState('');
+  const [upd, setUpd] = useState(null); // {state, latest?, msg?}
 
   // 📌 固定面板：固定后失焦不自动隐藏（如去资源管理器选文件再拖回来）
   useEffect(() => {
     window.api.store.get('panelPinned', false).then(setPinned);
+    window.api.app.version().then(setVer);
   }, []);
+
+  const newerThan = (a, b) => {
+    const pa = String(a).replace(/^v/, '').split('.').map(Number);
+    const pb = String(b).replace(/^v/, '').split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if ((pa[i] || 0) > (pb[i] || 0)) return true;
+      if ((pa[i] || 0) < (pb[i] || 0)) return false;
+    }
+    return false;
+  };
+
+  // 检查更新：读 GitHub Releases 的 latest.yml（electron-builder 生成）
+  const RELEASES = 'https://github.com/Tanboku/tan-factory/releases';
+  const checkUpdate = async () => {
+    if (upd?.state === 'checking') return;
+    setUpd({ state: 'checking' });
+    try {
+      const r = await fetch(`${RELEASES}/latest/download/latest.yml`, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const y = await r.text();
+      const latest = (y.match(/^version:\s*(\S+)/m) || [])[1];
+      if (!latest) throw new Error('版本信息解析失败');
+      setUpd(newerThan(latest, ver) ? { state: 'new', latest } : { state: 'latest', latest });
+    } catch (e) {
+      setUpd({ state: 'error', msg: e.message });
+    }
+  };
   const togglePin = () => {
     const v = !pinned;
     setPinned(v);
@@ -258,10 +288,31 @@ export default function PanelApp() {
         )}
       </div>
 
+      {upd && upd.state !== 'checking' && (
+        <div className={`upd-bar ${upd.state}`}>
+          {upd.state === 'new' && (
+            <>
+              🎉 发现新版本 <b>v{upd.latest}</b>（当前 v{ver}）
+              <a onClick={() => window.api.shell.openExternal(`${RELEASES}/tag/v${upd.latest}`)}>前往下载</a>
+            </>
+          )}
+          {upd.state === 'latest' && <>✅ 已是最新版本（v{upd.latest}）</>}
+          {upd.state === 'error' && (
+            <>
+              ⚠️ 检查失败（{upd.msg}）
+              <a onClick={() => window.api.shell.openExternal(RELEASES)}>直接打开下载页</a>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="panel-foot">
-        <span>共 {TOOLS.length} 个工具</span>
+        <span className="foot-ver" onClick={checkUpdate} title="检查更新">
+          共 {TOOLS.length} 个工具{ver ? ` · v${ver}` : ''}
+          {upd?.state === 'checking' ? ' · 检查中…' : ' · 检查更新'}
+        </span>
         <span className="foot-kbd">
-          <kbd>Alt</kbd>+<kbd>Space</kbd> 快速唤起
+          <kbd>Alt</kbd>+<kbd>Space</kbd> 唤起 · <kbd>F9</kbd> 阅读器隐身
         </span>
       </div>
     </div>

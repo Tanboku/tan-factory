@@ -39,6 +39,7 @@ jobs:
           name: windows-exe
           path: |
             release/*.exe
+            release/*.yml
 
       - name: Publish to GitHub Releases (on tag)
         if: startsWith(github.ref, 'refs/tags/')
@@ -46,6 +47,7 @@ jobs:
         with:
           files: |
             release/*.exe
+            release/*.yml
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

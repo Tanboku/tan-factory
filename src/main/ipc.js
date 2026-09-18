@@ -63,6 +63,7 @@ function registerIPC(wm) {
     const { app } = require('electron');
     app.quit();
   });
+  ipcMain.handle('app:version', () => require('electron').app.getVersion());
 }
 
 module.exports = registerIPC;

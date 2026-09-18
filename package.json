@@ -1,6 +1,6 @@
 {
   "name": "rabbit-factory",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "兔子工厂 - 桌面悬浮球办公工具箱",
   "main": "src/main/index.js",
   "author": "tan-factory",

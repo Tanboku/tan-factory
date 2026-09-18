@@ -2402,3 +2402,71 @@ input:disabled {
 .rd-read:hover {
   background: #ffe9e2;
 }
+
+/* 导航栏显示策略：自动（透明类隐藏悬停浮现）/ 常显 / 隐藏 */
+.reader .reader-bar {
+  transition: opacity 0.18s ease;
+}
+.reader.bar-hide .reader-bar {
+  display: none;
+}
+.reader.bar-auto.mode-ghost .reader-bar,
+.reader.bar-auto.mode-ghost-line .reader-bar {
+  opacity: 0;
+}
+.reader.bar-auto.mode-ghost:hover .reader-bar,
+.reader.bar-auto.mode-ghost-line:hover .reader-bar {
+  opacity: 1;
+}
+
+/* ============ 检查更新 ============ */
+.upd-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 16px 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.upd-bar.new {
+  background: #fff8ef;
+  border: 1px solid #ffd9a8;
+  color: #b26a00;
+}
+.upd-bar.latest {
+  background: #f4fcf6;
+  border: 1px solid #bfe8cd;
+  color: #2e9e5b;
+}
+.upd-bar.error {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.upd-bar a {
+  color: var(--accent-deep);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.panel-foot .foot-ver {
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.panel-foot .foot-ver:hover {
+  color: var(--accent-deep);
+}
+
+/* 书架列表限高滚动 */
+.rd-books {
+  max-height: 230px;
+  overflow-y: auto;
+}
+.rd-set-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+.rd-set-toggle:hover {
+  color: var(--accent-deep);
+}
