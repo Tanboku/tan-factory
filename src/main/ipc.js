@@ -23,6 +23,11 @@ function registerIPC(wm) {
   ipcMain.on('panel:hide', () => wm.hidePanel());
   ipcMain.handle('panel:getPayload', () => wm.consumePayload());
 
+  // ---------- 摸鱼阅读器 ----------
+  ipcMain.on('reader:hide', () => wm.hideReader());
+  ipcMain.handle('reader:getBook', () => wm.consumeReaderBook());
+  ipcMain.on('reader:resize', (_e, w, h) => wm.resizeReader(w, h));
+
   // ---------- 工具统一入口 ----------
   ipcMain.handle('tool:run', (_e, toolId, action, payload) => {
     return services.run(toolId, action, payload, { wm });

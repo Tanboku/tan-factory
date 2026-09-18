@@ -21,8 +21,9 @@ if (!gotLock) {
     wm.createAll();
     registerIPC(wm);
 
-    // uTools 式全局快捷键
+    // uTools 式全局快捷键 + 摸鱼阅读器 Boss 键（F9 一键隐身/恢复，不丢进度）
     globalShortcut.register('Alt+Space', () => wm.togglePanel());
+    globalShortcut.register('F9', () => wm.toggleReader());
 
     if (process.env.VERIFY) wm.runVerify();
 

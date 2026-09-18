@@ -22,6 +22,13 @@ contextBridge.exposeInMainWorld('api', {
     onPayload: (cb) => ipcRenderer.on('panel:payload', (_e, p) => cb(p)),
   },
 
+  reader: {
+    hide: () => ipcRenderer.send('reader:hide'),
+    getBook: () => ipcRenderer.invoke('reader:getBook'),
+    onBook: (cb) => ipcRenderer.on('reader:book', (_e, id) => cb(id)),
+    resize: (w, h) => ipcRenderer.send('reader:resize', w, h),
+  },
+
   tool: {
     run: (toolId, action, payload) => ipcRenderer.invoke('tool:run', toolId, action, payload),
     onProgress: (cb) => ipcRenderer.on('tool:progress', (_e, p) => cb(p)),

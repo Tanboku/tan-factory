@@ -43,7 +43,68 @@ class WindowManager {
   createAll() {
     this.createBall();
     this.createPanel();
+    this.createReader();
     this.createTray();
+  }
+
+  /** 摸鱼阅读器窗口：透明、置顶、常驻（失焦不隐藏），F9 一键隐身 */
+  createReader() {
+    this.reader = new BrowserWindow({
+      width: 480,
+      height: 340,
+      show: false,
+      transparent: true,
+      frame: false,
+      resizable: false,
+      skipTaskbar: true,
+      hasShadow: false,
+      alwaysOnTop: true,
+      webPreferences: {
+        preload: this._preload(),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false,
+      },
+    });
+    this.reader.setAlwaysOnTop(true, 'screen-saver', 2); // 悬浮球与面板之上
+    this.reader.loadFile(INDEX, { search: '?win=reader' });
+    this.reader.on('closed', () => (this.reader = null));
+  }
+
+  showReader(bookId) {
+    if (!this.reader) this.createReader();
+    if (bookId) {
+      this._readerBookId = bookId;
+      if (!this.reader.webContents.isLoading()) {
+        this.reader.webContents.send('reader:book', bookId);
+      }
+    }
+    const wa = screen.getPrimaryDisplay().workArea;
+    const b = this.reader.getBounds();
+    this.reader.setPosition(Math.min(wa.x + 80, wa.x + wa.width - b.width - 40), wa.y + 60, false);
+    this.reader.show();
+    this.reader.focus();
+  }
+
+  hideReader() {
+    if (this.reader && this.reader.isVisible()) this.reader.hide();
+  }
+
+  toggleReader() {
+    if (!this.reader) return;
+    if (this.reader.isVisible()) this.hideReader();
+    else this.showReader();
+  }
+
+  resizeReader(w, h) {
+    if (!this.reader) return;
+    this.reader.setSize(Math.max(240, Math.min(1000, Math.round(w))), Math.max(40, Math.min(900, Math.round(h))), false);
+  }
+
+  consumeReaderBook() {
+    const id = this._readerBookId;
+    this._readerBookId = null;
+    return id;
   }
 
   /** 系统托盘（右下角隐藏图标区）：隐藏兔子后的入口 */
@@ -374,6 +435,37 @@ class WindowManager {
           `document.querySelector('.tool-title')?.textContent || 'LEFT_TOOL_VIEW'`
         );
         this.log('[verify:feed]', JSON.stringify({ before, after, stillInTool: viewNow }));
+      }
+
+      // 摸鱼阅读器：导入 → 打开 → 截图 → 模拟 M 键切模式
+      if (process.env.VERIFY_READER) {
+        const services = require('./services');
+        const imp = await services.run('reader', 'import', { path: process.env.VERIFY_READER });
+        this.log('[verify:reader:import]', JSON.stringify(imp.ok ? { name: imp.data.name, chars: imp.data.chars } : imp));
+        if (imp.ok) {
+          this.showReader(imp.data.id);
+          await sleep(1400);
+          await this.capture(this.reader, '05-reader.png');
+          const dom = await this.reader.webContents.executeJavaScript(
+            `((document.querySelector('.reader-text')?.textContent || '').slice(0, 30)) + '|LEN=' + (document.querySelector('.reader-text')?.textContent || '').length`
+          );
+          this.log('[verify:reader:dom]', JSON.stringify(dom));
+          await this.reader.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'m'})); 'ok'`);
+          await sleep(600);
+          await this.capture(this.reader, '05-reader-ghost.png');
+          const cls = await this.reader.webContents.executeJavaScript(`document.querySelector('.reader')?.className`);
+          this.log('[verify:reader:mode]', cls);
+          // 进度持久化：滚到底 → 防抖保存 → 断言 pos > 0.5
+          await this.reader.webContents.executeJavaScript(
+            `(()=>{const el=document.querySelector('.reader-text');el.scrollTop=el.scrollHeight;el.dispatchEvent(new Event('scroll'));return el.scrollTop})()`
+          );
+          await sleep(1100);
+          const services2 = require('./services');
+          const lst = await services2.run('reader', 'list');
+          const meta = lst.ok ? (lst.data || []).find((b) => b.id === imp.data.id) : null;
+          this.log('[verify:reader:progress]', JSON.stringify({ pos: meta ? meta.pos : 'MISSING' }));
+          this.hideReader();
+        }
       }
     } catch (e) {
       this.log('[verify:error]', e && e.stack ? e.stack : String(e));
