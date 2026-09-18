@@ -2,6 +2,14 @@
 
 一只能在桌面上「养着」的办公工具箱：启动后是一只兔子脸悬浮球，单击展开工具面板，拖拽移动、投喂文件智能匹配工具，`Alt+Space` 全局唤起。
 
+## 📥 下载渠道
+
+| 渠道 | 说明 |
+| --- | --- |
+| **GitHub Releases**（推荐） | 推送 `v*` 标签后由 Actions 自动构建并发布安装版/便携版 exe：[Releases 页面](https://github.com/Tanboku/tan-factory/releases) |
+| **手动触发构建** | 仓库 Actions → `Build & Release Windows EXE` → Run workflow（产物同时上传为 Artifact） |
+| **本地自行打包** | 见下方命令（`.npmrc` 已配置 npmmirror 镜像，国内网络可直连安装依赖与 Electron 二进制） |
+
 ## 常用命令
 
 ```bash
