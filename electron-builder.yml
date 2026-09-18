@@ -1,0 +1,27 @@
+appId: com.tanfactory.rabbit
+productName: RabbitFactory
+directories:
+  output: release
+files:
+  - dist-renderer/**
+  - src/main/**
+  - src/preload/**
+  - package.json
+asarUnpack:
+  - node_modules/ffmpeg-static/**
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  oneClick: true
+  deleteAppDataOnUninstall: false
+  shortcutName: 兔子工厂
+  artifactName: 兔子工厂-Setup-${version}.exe
+portable:
+  artifactName: 兔子工厂-Portable-${version}.exe

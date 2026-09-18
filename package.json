@@ -1,0 +1,31 @@
+{
+  "name": "rabbit-factory",
+  "version": "1.0.0",
+  "description": "兔子工厂 - 桌面悬浮球办公工具箱",
+  "main": "src/main/index.js",
+  "author": "tan-factory",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite build && electron .",
+    "start": "vite build && electron .",
+    "verify": "vite build && cross-env-shell VERIFY=1 electron .",
+    "build": "vite build",
+    "dist": "vite build && electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "cross-env-shell": "^7.0.3",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
+    "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "gifenc": "^1.0.3",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sm-crypto": "^0.5.7"
+  }
+}
