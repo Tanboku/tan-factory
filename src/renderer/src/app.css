@@ -2470,3 +2470,104 @@ input:disabled {
 .rd-set-toggle:hover {
   color: var(--accent-deep);
 }
+
+/* ============ 游戏工具箱（通用） ============ */
+.gm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.gm-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #12b5a522, #0e8f8322);
+  border: 1px solid #bfe8e3;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.gm-logo {
+  font-size: 30px;
+}
+.gm-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+.gm-sub {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.gm-search {
+  margin-left: auto;
+  width: 90px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  font-size: 12px;
+  outline: none;
+  flex-shrink: 0;
+  transition: width 0.2s;
+}
+.gm-search:focus {
+  width: 130px;
+  border-color: #12b5a5;
+}
+.gm-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0e8f83;
+  margin-bottom: 6px;
+}
+.gm-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.gm-link {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  text-align: left;
+  transition: all 0.15s;
+}
+.gm-link:hover {
+  border-color: #12b5a5;
+  box-shadow: 0 6px 14px rgba(18, 181, 165, 0.15);
+  transform: translateY(-2px);
+}
+.gm-link:active {
+  transform: translateY(0);
+}
+.gm-link-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.gm-link-desc {
+  font-size: 10px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.gm-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.gm-tip {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}

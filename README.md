@@ -19,7 +19,7 @@ npm run verify     # 自动化视觉/DOM/功能自检（截图输出到 .verify/
 npm run dist       # 打包 Windows exe（release/ 目录）
 ```
 
-## 内置工具（24 个）
+## 内置工具（25 个）
 
 | 工具 | 分类 | 说明 |
 | --- | --- | --- |
@@ -46,6 +46,7 @@ npm run dist       # 打包 Windows exe（release/ 目录）
 | 🔐 SM4/SM3 加密 | 安全 | 国密 SM4 加解密（ECB/CBC）与 SM3 哈希 |
 | 🔓 ZIP 密码恢复 | 安全 | 字典/常见密码/掩码暴力（ZipCrypto + AES，仅限自有文件） |
 | 🛡️ PE 壳检测 | 安全 | 区段熵 + 壳签名识别（UPX/VMProtect 等，脱壳辅助） |
+| 🚌 边狱巴士工具箱 | 游戏 | Limbus Company 工具与 Wiki 导航（HuijiWiki / wiki.gg / Prydwen 等） |
 | 🐰 使用指引 | 效率 | 玩法与扩展指南 |
 
 ## 交互
